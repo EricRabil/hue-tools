@@ -2,6 +2,8 @@ import hue, { HueApi } from "node-hue-api";
 import fs from "fs-extra";
 import readline from "readline-sync";
 import GradientScene from "./scenes/gradient";
+import StrobeScene from "./scenes/strobe";
+import { RGB } from "./util/Colors";
 
 (async function () {
     let api: HueApi;
@@ -41,8 +43,15 @@ import GradientScene from "./scenes/gradient";
             rangeR: [0,0],
             rangeG: [50,50]
         },
-        groups: [rootGroup]
+        groups: [rootGroup.id]
     });
 
-    await gradient.start();
+    const strobe = new StrobeScene(api, {
+        transition: 200,
+        groups: [rootGroup.id],
+        activeColorGenerator: () => RGB.random(),
+        inactiveColorGenerator: () => RGB.random()
+    });
+
+    await strobe.start();
 })();
