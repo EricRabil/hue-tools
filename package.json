@@ -1,0 +1,19 @@
+{
+  "name": "hue-tools",
+  "version": "1.0.0",
+  "main": "out/index.js",
+  "repository": "https://github.com/EricRabil/hue-tools.git",
+  "author": "Eric Rabil <ericjrabil@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "node-hue-api": "^2.4.4"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^5.0.4",
+    "@types/node-hue-api": "^2.3.0",
+    "@types/readline-sync": "^1.4.3",
+    "fs-extra": "^7.0.1",
+    "readline-sync": "^1.4.9",
+    "typescript": "^3.2.1"
+  }
+}
