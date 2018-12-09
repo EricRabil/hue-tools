@@ -8,6 +8,18 @@ export interface GradientOptions extends BaseSceneOptions {
     transitionModifier?: boolean | number;
 }
 
+export const ColorRangeSamples: {[key: string]: RGBRange} = {
+    sunset: {
+        rangeR: [244,244],
+        rangeG: [86, 170],
+        rangeB: [66,66]
+    },
+    sky: {
+        rangeR: [0,0],
+        rangeG: [50,50]
+    }
+}
+
 export default class GradientScene extends Scene<GradientOptions> {
     constructor(api: HueApi, options: GradientOptions) {
         super(api, options, (options.transitionModifier === true || options.transitionModifier === undefined) ? options.transition * 1.5 : (options.transitionModifier === false) ? options.transition : (options.transition * options.transitionModifier));

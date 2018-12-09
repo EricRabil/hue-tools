@@ -1,11 +1,13 @@
+import "./util/patches";
+
 import hue, { HueApi } from "node-hue-api";
 import fs from "fs-extra";
 import readline from "readline-sync";
-import GradientScene from "./scenes/gradient";
+import GradientScene, { ColorRangeSamples } from "./scenes/gradient";
 import StrobeScene from "./scenes/strobe";
 import { RGB } from "./util/Colors";
 
-(async function () {
+export default async function initializeLibrary() {
     let api: HueApi;
 
     if (await fs.pathExists("./bridge.json")) {
@@ -19,6 +21,8 @@ import { RGB } from "./util/Colors";
             console.error("No bridge found.");
             process.exit(-1);
         }
+
+        console.log(bridge);
 
         api = new HueApi();
 
@@ -37,13 +41,10 @@ import { RGB } from "./util/Colors";
     const [rootGroup] = await api.getAllGroups();
 
     const gradient = new GradientScene(api, {
-        transition: 2500,
-        brightnessRange: [5, 15],
-        colorRange: {
-            rangeR: [0,0],
-            rangeG: [50,50]
-        },
-        groups: [rootGroup.id]
+        transition: 1000,
+        brightnessRange: [50, 50],
+        colorRange: ColorRangeSamples.sky,
+        groups: ['8']
     });
 
     const strobe = new StrobeScene(api, {
@@ -53,5 +54,5 @@ import { RGB } from "./util/Colors";
         inactiveColorGenerator: () => RGB.random()
     });
 
-    await strobe.start();
-})();
+    return api;
+};
