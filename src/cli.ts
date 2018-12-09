@@ -1,13 +1,14 @@
+import { lightState } from "node-hue-api";
 import yargs from "yargs";
 import initializeLibrary from ".";
-import { ListEntities, createGroup, GetEntity, DeleteEntity } from "./management/list-lights";
-import { lightState } from "node-hue-api";
+import { createGroup, DeleteEntity, GetEntity, ListEntities } from "./management/list-lights";
 import GradientScene, { ColorRangeSamples } from "./scenes/gradient";
 import StrobeScene from "./scenes/strobe";
+import fs from "fs-extra";
 
 const argv = yargs.usage('Usage: $0 <cmd> [options]')
-    .command('manage', 'manage your hue bridge', yarg => 
-        yarg.command('groups', 'manage groups', yarg => 
+    .command('manage', 'manage your hue bridge', yarg =>
+        yarg.command('groups', 'manage groups', yarg =>
             yarg.command('add', 'add a group', yarg =>
                 yarg.options('name', {
                     default: "Hue Group"
@@ -17,11 +18,11 @@ const argv = yargs.usage('Usage: $0 <cmd> [options]')
                     required: true
                 })
             ).command('list', 'list groups')
-             .command('get', 'get groups', yarg =>
-                yarg.options('id', {
-                    required: true
-                })
-            )
+                .command('get', 'get groups', yarg =>
+                    yarg.options('id', {
+                        required: true
+                    })
+                )
         ).command('lights', 'manage lights', yarg =>
             yarg.command('list', 'list lights')
                 .command('get', 'get lights', yarg =>
@@ -36,17 +37,17 @@ const argv = yargs.usage('Usage: $0 <cmd> [options]')
             yarg.command('gradient', 'start the gradient scene', yarg =>
                 yarg.array('lights')
                     .array('groups')
-                    .option('transition', {demandOption: true})
+                    .option('transition', { default: 1000 })
                     .array('brightnessRange')
                     .array('rangeR')
                     .array('rangeG')
                     .array('rangeB')
-                    .option('disableTransitionModifier', {default: false})
+                    .option('disableTransitionModifier', { default: false })
                     .option('rgbProfile', {})
             ).command('strobe', 'start the strobe scene', yarg =>
                 yarg.array('lights')
                     .array('groups')
-                    .option('transition', {demandOption: true})
+                    .option('transition', { demandOption: true })
                     .option('activeColorGenerator', {})
                     .option('inactiveColorGenerator', {})
             )
@@ -64,32 +65,32 @@ initializeLibrary().then(async api => {
         case "manage":
             {
                 let [target, directive] = directives;
-                
+
                 switch (directive) {
                     case "list":
-                    (<any>ListEntities)[target](api).then(console.log);
-                    break;
+                        (<any>ListEntities)[target](api).then(console.log);
+                        break;
                     case "add":
                         switch (target) {
                             case "groups":
-                            const name: string = argv.argv.name;
-                            const lights: string[] = argv.argv.lights;
-            
-                            await createGroup(api, name, lights).then(() => console.log("Done."));
+                                const name: string = argv.argv.name;
+                                const lights: string[] = argv.argv.lights;
+
+                                await createGroup(api, name, lights).then(() => console.log("Done."));
                         }
-                    break
+                        break
                     case "get":
-                    {
-                        let {id} = argv.argv;
-                        (<any>GetEntity)[target](api, id).then(console.log);
-                    }
-                    break;
+                        {
+                            let { id } = argv.argv;
+                            (<any>GetEntity)[target](api, id).then(console.log);
+                        }
+                        break;
                     case "delete":
-                    {
-                        let {id} = argv.argv;
-                        (<any>DeleteEntity)[target](api, id).then(console.log);
-                    }
-                    break;
+                        {
+                            let { id } = argv.argv;
+                            (<any>DeleteEntity)[target](api, id).then(console.log);
+                        }
+                        break;
                 }
                 break;
             }
@@ -97,51 +98,76 @@ initializeLibrary().then(async api => {
             const [directive, ...data] = directives;
             switch (directive) {
                 case "start":
-                const [sceneName, ...sceneData] = data;
-                const {lights, groups, transition} = argv.argv;
-                switch (sceneName) {
-                    case "gradient":
-                    const {brightnessRange, rangeR, rangeG, rangeB, disableTransitionModifier, rgbProfile} = argv.argv;
+                    const [sceneName, ...sceneData] = data;
+                    const { lights, groups, transition } = argv.argv;
+                    switch (sceneName) {
+                        case "gradient":
+                            const { load, save, brightnessRange, rangeR, rangeG, rangeB, disableTransitionModifier, rgbProfile } = argv.argv;
+                            
+                            const profile = await fs.readJSON("./bridge.json");
 
-                    const colorRange = rgbProfile && ColorRangeSamples[rgbProfile] || {
-                        rangeR,
-                        rangeG,
-                        rangeB
-                    };
+                            let gradient: GradientScene;
 
-                    const gradient = new GradientScene(api, {
-                        lights,
-                        groups,
-                        transition,
-                        brightnessRange,
-                        colorRange,
-                        transitionModifier: !disableTransitionModifier
-                    });
+                            if (load && typeof load === "string" && load.length > 0) {
+                                gradient = new GradientScene(api, {
+                                    lights,
+                                    groups,
+                                    ...profile.gradientProfiles[load]
+                                });
+                            } else {
+                                const colorRange = rgbProfile && ColorRangeSamples[rgbProfile] || {
+                                    rangeR,
+                                    rangeG,
+                                    rangeB
+                                };
 
-                    await gradient.start();
+                                gradient = new GradientScene(api, {
+                                    lights,
+                                    groups,
+                                    transition,
+                                    brightnessRange,
+                                    colorRange,
+                                    transitionModifier: !disableTransitionModifier
+                                });
+
+                                if (save && typeof save === "string" && save.length > 0) {
+                                    const gradientProfiles = profile.gradientProfiles || (profile.gradientProfiles = {});
+    
+                                    gradientProfiles[save] = {
+                                        transition,
+                                        brightnessRange,
+                                        colorRange,
+                                        transitionModifier: !disableTransitionModifier
+                                    };
+    
+                                    await fs.writeJSON("./bridge.json", profile);
+                                }
+                            }
+
+                            await gradient.start();
+                            break;
+                        case "strobe":
+                            const { activeColorGenerator, inactiveColorGenerator } = argv.argv;
+
+                            const strobe = new StrobeScene(api, {
+                                lights,
+                                groups,
+                                transition
+                            });
+
+                            await strobe.start();
+                            break;
+                    }
                     break;
-                    case "strobe":
-                    const {activeColorGenerator, inactiveColorGenerator} = argv.argv;
-
-                    const strobe = new StrobeScene(api, {
-                        lights,
-                        groups,
-                        transition
-                    });
-
-                    await strobe.start();
-                    break;
-                }
-                break;
             }
             break;
         case "state":
-            let {lights, groups, state} = argv.argv;
+            let { lights, groups, state } = argv.argv;
             lights = lights || [];
             groups = groups || [];
 
             const newState = lightState.create(state);
-            
+
             console.log(state);
 
             const operations: Array<Promise<any>> = groups.map((g: any) => api.setGroupLightState(g, newState)).concat(lights.map((l: any) => api.setLightState(l, newState)));
