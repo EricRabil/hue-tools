@@ -38,21 +38,5 @@ export default async function initializeLibrary() {
         api = new HueApi(bridge.ipaddress, username);
     }
 
-    const [rootGroup] = await api.getAllGroups();
-
-    const gradient = new GradientScene(api, {
-        transition: 1000,
-        brightnessRange: [50, 50],
-        colorRange: ColorRangeSamples.sky,
-        groups: ['8']
-    });
-
-    const strobe = new StrobeScene(api, {
-        transition: 200,
-        groups: [rootGroup.id],
-        activeColorGenerator: () => RGB.random(),
-        inactiveColorGenerator: () => RGB.random()
-    });
-
     return api;
 };

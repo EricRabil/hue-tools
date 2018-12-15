@@ -1,6 +1,7 @@
 import { Scene, BaseSceneOptions } from "../struct/scene";
 import { HueApi, lightState } from "node-hue-api";
 import { randomNumber, RGB } from "../util/Colors";
+import logger from "../util/logging";
 
 export interface StrobeOptions extends BaseSceneOptions {
     activeColorGenerator?: () => RGB
@@ -27,10 +28,13 @@ export default class StrobeScene extends Scene<StrobeOptions> {
             groups.map(group => group.lights || []).reduce((arr, lights) => arr.concat(lights), []));
 
         await this.dispatch(BASE_STATE);
+
+        logger.debug('strobe lights set to base');
     }
 
     async next() {
         await Promise.all([this.dispatch(this.nextBaseState, [], this.currentLight ? [this.currentLight] : []), this.dispatch(this.nextState, [], [this.nextLight])]);
+        logger.debug('strobe');
     }
 
     private get nextState() {
@@ -42,6 +46,6 @@ export default class StrobeScene extends Scene<StrobeOptions> {
     }
 
     private get nextLight(): string {
-        return this.currentLight = this.lights[randomNumber([0, this.lights.length - 1]).toFixed(0) * 1];
+        return this.currentLight = this.lights[<any>randomNumber([0, this.lights.length - 1]).toFixed(0) * 1];
     }
 }

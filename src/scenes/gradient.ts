@@ -26,7 +26,7 @@ export default class GradientScene extends Scene<GradientOptions> {
     }
 
     async next() {
-        const state = LightState.create().xy(...RGB.random(this.options.colorRange).xy).transition(this.options.transition);
+        const state = LightState.create().xy(...RGB.random(this.options.colorRange).xy).transition(this.options.transition).turnOn();
 
         if (this.options.brightnessRange) {
             state.brightness(randomNumber(this.options.brightnessRange));
