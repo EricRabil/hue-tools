@@ -49,6 +49,8 @@ const argv = yargs.usage('Usage: $0 <cmd> [options]')
                     .array('rangeB')
                     .option('disableTransitionModifier', { default: false })
                     .option('rgbProfile', {})
+                    .number('gradientSteps')
+                    .number('gradientStops')
             ).command('strobe', 'start the strobe scene', yarg =>
                 yarg.array('lights')
                     .array('groups')
@@ -120,7 +122,7 @@ initializeLibrary().then(async api => {
                     const { lights, groups, transition } = argv.argv;
                     switch (sceneName) {
                         case "gradient":
-                            const { load, save, brightnessRange, rangeR, rangeG, rangeB, disableTransitionModifier, rgbProfile } = argv.argv;
+                            const { gradientSteps, gradientStops, load, save, brightnessRange, rangeR, rangeG, rangeB, disableTransitionModifier, rgbProfile } = argv.argv;
                             
                             const profile = await fs.readJSON("./bridge.json");
 
@@ -143,7 +145,9 @@ initializeLibrary().then(async api => {
                                     transition,
                                     brightnessRange,
                                     colorRange,
-                                    transitionModifier: !disableTransitionModifier
+                                    transitionModifier: !disableTransitionModifier,
+                                    gradientSteps,
+                                    gradientStops
                                 });
 
                                 if (save && typeof save === "string" && save.length > 0) {
@@ -155,7 +159,9 @@ initializeLibrary().then(async api => {
                                         transition,
                                         brightnessRange,
                                         colorRange,
-                                        transitionModifier: !disableTransitionModifier
+                                        transitionModifier: !disableTransitionModifier,
+                                        gradientSteps,
+                                        gradientStops
                                     };
     
                                     await fs.writeJSON("./bridge.json", profile);

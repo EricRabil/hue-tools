@@ -4,11 +4,14 @@ import { RGB, randomNumber, RGBRange } from "../util/colors";
 
 import tinygradient from "tinygradient";
 import { ColorFormats } from "tinycolor2";
+import logger from "../util/logging";
 
 export interface GradientOptions extends BaseSceneOptions {
     brightnessRange?: number[];
     colorRange?: RGBRange;
     transitionModifier?: boolean | number;
+    gradientSteps?: number;
+    gradientStops?: number;
 }
 
 export const ColorRangeSamples: {[key: string]: RGBRange} = {
@@ -25,7 +28,7 @@ export const ColorRangeSamples: {[key: string]: RGBRange} = {
 
 const RGB_LOOP_SIZE: number = 50;
 
-export async function generateRGB(constraint?: RGBRange) {
+export async function generateRGB(constraint?: RGBRange, stops?: number) {
     if (constraint) {
         if (!constraint.rangeR) constraint.rangeR = [0, 255];
         if (!constraint.rangeG) constraint.rangeG = [0, 255];
@@ -34,7 +37,7 @@ export async function generateRGB(constraint?: RGBRange) {
 
     const loop: Array<{r: number, g: number, b: number}> = [];
 
-    for (let i = 0; i < RGB_LOOP_SIZE; i++) {
+    for (let i = 0; i < (stops || RGB_LOOP_SIZE); i++) {
         loop[i] = RGB.random(constraint);
     }
 
@@ -51,10 +54,10 @@ export default class GradientScene extends Scene<GradientOptions> {
     private reversing: boolean = false;
 
     async init() {
-        const loop = await generateRGB(this.options.colorRange);
+        const loop = await generateRGB(this.options.colorRange, this.options.gradientStops);
 
         const gradient = tinygradient(loop);
-        this.gradientSteps = gradient.rgb(500).map(c => c.toRgb());
+        this.gradientSteps = gradient.rgb(this.options.gradientSteps || 500).map(c => c.toRgb());
     }
 
     async next() {
@@ -69,6 +72,8 @@ export default class GradientScene extends Scene<GradientOptions> {
 
     private get color(): ColorFormats.RGB {
         const gradient = this.gradientSteps[this.position];
+        logger.debug('next color: %s', JSON.stringify(gradient));
+        logger.debug('position: %s/%s', this.position, this.gradientSteps.length - 1)
 
         if (this.reversing) {
             this.position--;
@@ -77,10 +82,12 @@ export default class GradientScene extends Scene<GradientOptions> {
         }
 
         if (this.position >= this.gradientSteps.length) {
-            this.position = this.gradientSteps.length - 1;
+            this.position = this.gradientSteps.length - 2;
+            logger.debug('gradient is now reversing');
             this.reversing = true;
         } else if (this.position === -1) {
-            this.position = 0;
+            this.position = 1;
+            logger.debug('gradient is done reversing');
             this.reversing = false;
         }
 
