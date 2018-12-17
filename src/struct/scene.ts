@@ -13,7 +13,12 @@ export abstract class Scene<T extends BaseSceneOptions = BaseSceneOptions> {
 
     private dropoutCount: number = 0;
 
-    protected constructor(protected readonly api: HueApi, protected options: T, private timeoutMS: number) {
+    private average: number = 0;
+    private averageCount: number = 0;
+
+    private stopped: boolean = true;
+
+    protected constructor(protected readonly api: HueApi, protected options: T, protected timeoutMS: number) {
         if (timeoutMS < 150) {
             logger.warn('transitions under 150ms may cause lags and cooldowns.');
         }
@@ -21,11 +26,13 @@ export abstract class Scene<T extends BaseSceneOptions = BaseSceneOptions> {
     }
 
     public async start(): Promise<void> {
+        this.stopped = false;
         await this.init();
         this.delayedNext(true);
     }
 
     public async stop(): Promise<void> {
+        this.stopped = true;
         clearTimeout(this.timer);
     }
 
@@ -36,6 +43,10 @@ export abstract class Scene<T extends BaseSceneOptions = BaseSceneOptions> {
     }
 
     protected async dispatch(state: LightState.State, groupsOverride?: string[], lightsOverride?: string[]) {
+        if (this.stopped) {
+            logger.debug('dispatch called but scene is stopped. blocking.');
+            return;
+        }
         if (this.dropoutCount >= 10) {
             logger.debug('scene keeps dropping out. cooling down.');
             await sleep(5000);
@@ -52,7 +63,12 @@ export abstract class Scene<T extends BaseSceneOptions = BaseSceneOptions> {
         ).catch(e => {logger.warn('scene dropped a dispatch'); this.dropoutCount++;});
         const endTime = Date.now();
         const elapsed = endTime - startTime;
-        logger.debug(`scene dispatched in ${elapsed}ms`);
+        let averageSrc = this.average * this.averageCount;
+        this.averageCount++;
+        averageSrc += elapsed;
+        averageSrc /= this.averageCount;
+        this.average = averageSrc;
+        logger.debug(`scene dispatched in ${elapsed}ms, average dispatch ${averageSrc}ms`);
     }
     
     private delayedNext(loop: boolean = false) {
