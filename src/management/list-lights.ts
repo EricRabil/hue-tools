@@ -1,4 +1,5 @@
 import { HueApi, ILight, ILightGroup } from "node-hue-api";
+import logger from "../util/logging";
 
 export function createGroup(api: HueApi, name: string, lights: string[]): Promise<void> {
     return api.createGroup(name, lights).catch(e => void 0).then(r => void 0);
@@ -29,7 +30,7 @@ export namespace DeleteEntity {
         return api.deleteGroup(id);
     }
 
-    export function lights() {
-        return Promise.reject("Cannot delete a light.");
+    export async function lights() {
+        return 'lights cannot be deleted.';
     }
 }
