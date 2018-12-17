@@ -25,5 +25,5 @@ node cli scene start gradient --transition=5000 --rgbProfile=sunset --groups=0 -
 node cli scene start gradient --load=sunset
 
 # visualizes sounds from your mic using rec
-node cli scene start sounds --transition=700 --groups=0
+node cli scene start sound --transition=700 --groups=0
 ```
