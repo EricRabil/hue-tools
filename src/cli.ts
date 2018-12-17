@@ -3,11 +3,12 @@ import yargs from "yargs";
 import initializeLibrary from ".";
 import { createGroup, DeleteEntity, GetEntity, ListEntities } from "./management/list-lights";
 import GradientScene, { ColorRangeSamples } from "./scenes/gradient";
-import StrobeScene from "./scenes/strobe";
+import StrobeScene, { ColorGenerators } from "./scenes/strobe";
 import fs from "fs-extra";
 import SoundScene from "./scenes/sounds";
 import WaveScene from "./scenes/wave";
 import logger from "./util/logging";
+import { RGB } from "./util/colors";
 
 const argv = yargs.usage('Usage: $0 <cmd> [options]')
     .command('manage', 'manage your hue bridge', yarg =>
@@ -169,7 +170,9 @@ initializeLibrary().then(async api => {
                             const strobe = new StrobeScene(api, {
                                 lights,
                                 groups,
-                                transition
+                                transition,
+                                activeColorGenerator: ColorGenerators[activeColorGenerator],
+                                inactiveColorGenerator: ColorGenerators[inactiveColorGenerator]
                             });
 
                             await strobe.start();

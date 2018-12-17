@@ -8,6 +8,12 @@ export interface StrobeOptions extends BaseSceneOptions {
     inactiveColorGenerator?: () => RGB
 }
 
+export const ColorGenerators: {[key: string]: () => RGB} = {
+    random() {
+        return RGB.random();
+    }
+}
+
 export const BASE_STATE = lightState.create().turnOn().brightness(0).xy(...new RGB(255, 255, 255).xy).transitionInstant();
 
 export default class StrobeScene extends Scene<StrobeOptions> {
