@@ -50,47 +50,67 @@ export default class GradientScene extends Scene<GradientOptions> {
     }
 
     private gradientSteps: ColorFormats.RGB[];
-    private position: number = 0;
-    private reversing: boolean = false;
+    private gradientPosition: number = 0;
+    private gradientReversing: boolean = false;
+
+    /**
+     * this is not good but it works please dont kill me i just wanted to reduce complexity
+     * 
+     * the brightness key is r, the rest are always zero. r only goes from 0-100. thank you.
+     */
+    private brightnessSteps: ColorFormats.RGB[];
+    private brightnessPosition: number = 0;
+    private brightnessReversing: boolean = false;
 
     async init() {
-        const loop = await generateRGB(this.options.colorRange, this.options.gradientStops);
+        const [gradientLoop, brightnessLoop] = await Promise.all([generateRGB(this.options.colorRange, this.options.gradientStops), generateRGB({rangeR: this.options.brightnessRange, rangeG: [0, 0], rangeB: [0, 0]}, this.options.gradientStops)]);
 
-        const gradient = tinygradient(loop);
+        const gradient = tinygradient(gradientLoop);
         this.gradientSteps = gradient.rgb(this.options.gradientSteps || 500).map(c => c.toRgb());
+
+        const brightness = tinygradient(brightnessLoop);
+        this.brightnessSteps = brightness.rgb(this.options.gradientSteps || 500).map(c => c.toRgb());
     }
 
     async next() {
         const state = LightState.create().xy(...RGB.from(this.color).xy).transition(this.options.transition).turnOn();
 
         if (this.options.brightnessRange) {
-            state.brightness(randomNumber(this.options.brightnessRange));
+            state.brightness(this.brightness.r);
         }
 
         await this.dispatch(state);
     }
 
-    private get color(): ColorFormats.RGB {
-        const gradient = this.gradientSteps[this.position];
-        logger.debug('next color: %s', JSON.stringify(gradient));
-        logger.debug('position: %s/%s', this.position, this.gradientSteps.length - 1)
+    private nextProp(prefix: "gradient" | "brightness"): ColorFormats.RGB {
+        const gradient = (this as any)[prefix + "Steps"][(this as any)[prefix + "Position"]];
+        logger.debug('next %s: %s', prefix, JSON.stringify(gradient));
+        logger.debug(prefix + ' position: %s/%s', (this as any)[prefix + "Position"], (this as any)[prefix + "Steps"].length - 1)
 
-        if (this.reversing) {
-            this.position--;
+        if ((this as any)[prefix + "Reversing"]) {
+            (this as any)[prefix + "Position"]--;
         } else {
-            this.position++;
+            (this as any)[prefix + "Position"]++;
         }
 
-        if (this.position >= this.gradientSteps.length) {
-            this.position = this.gradientSteps.length - 2;
-            logger.debug('gradient is now reversing');
-            this.reversing = true;
-        } else if (this.position === -1) {
-            this.position = 1;
-            logger.debug('gradient is done reversing');
-            this.reversing = false;
+        if ((this as any)[prefix + "Position"] >= (this as any)[prefix + "Steps"].length) {
+            (this as any)[prefix + "Position"] = (this as any)[prefix + "Steps"].length - 2;
+            logger.debug(prefix + ' is now reversing');
+            (this as any)[prefix + "Reversing"] = true;
+        } else if ((this as any)[prefix + "Position"] === -1) {
+            (this as any)[prefix + "Position"] = 1;
+            logger.debug(prefix + ' is done reversing');
+            (this as any)[prefix + "Reversing"] = false;
         }
 
         return gradient;
+    }
+
+    private get color() {
+        return this.nextProp("gradient");
+    }
+
+    private get brightness() {
+        return this.nextProp("brightness");
     }
 }
