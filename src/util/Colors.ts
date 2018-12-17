@@ -1,3 +1,5 @@
+import { ColorFormats } from "tinycolor2";
+
 export function randomNumber([min, max]: number[]): number {
     return Math.random() * (max - min) + min;
 }
@@ -21,6 +23,18 @@ export class RGB {
         rangeG = rangeG || [0, 256];
         rangeB = rangeB || [0, 256];
         return new RGB(randomNumber(rangeR), randomNumber(rangeG), randomNumber(rangeB));
+    }
+
+    public static from({r, g, b}: ColorFormats.RGB | ColorFormats.RGBA) {
+        return new RGB(r, g, b);
+    }
+
+    public get json() {
+        return {
+            r: this.r,
+            g: this.g,
+            b: this.b
+        };
     }
 }
 
