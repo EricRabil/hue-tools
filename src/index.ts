@@ -15,27 +15,29 @@ export default async function initializeLibrary() {
 
         api = new HueApi(host, username);
     } else {
-        const [bridge] = await hue.nupnpSearch();
+        const bridges = await hue.nupnpSearch();
 
-        if (!bridge) {
+        if (bridges.length === 0) {
             console.error("No bridge found.");
             process.exit(-1);
         }
 
-        console.log(bridge);
+        console.log(bridges);
+
+        const host = readline.question("What is your bridge IP?\n");
 
         api = new HueApi();
 
         readline.question("Please press link, then hit enter.");
 
-        const username = await api.createUser(bridge.ipaddress, "HueTools User");
+        const username = await api.createUser(host, "HueTools User");
 
         await fs.writeJSON("./bridge.json", {
-            host: bridge.ipaddress,
+            host,
             username
         });
 
-        api = new HueApi(bridge.ipaddress, username);
+        api = new HueApi(host, username);
     }
 
     return api;
