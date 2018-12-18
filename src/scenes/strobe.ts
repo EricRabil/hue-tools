@@ -25,8 +25,8 @@ export default class StrobeScene extends Scene<StrobeOptions> {
     }
 
     async init() {
-        const lightTargets = this.options.lights || [];
-        const groupTargets = this.options.groups || [];
+        const lightTargets = this.lightTargetIDs;
+        const groupTargets = this.groupTargetIDs;
 
         const groups = await Promise.all(groupTargets.map(g => this.api.getGroup(g)));
 

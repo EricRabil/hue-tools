@@ -1,11 +1,10 @@
 import { HueApi, ILight, ILightGroup, lightState as LightState } from "node-hue-api";
 import logger from "../util/logging";
 import { sleep } from "../util/timing";
+import Target from "./target";
 
-export interface BaseSceneOptions {
+export interface BaseSceneOptions extends Target {
     transition: number;
-    lights?: string[];
-    groups?: string[];
 }
 
 export abstract class Scene<T extends BaseSceneOptions = BaseSceneOptions> {
@@ -22,7 +21,12 @@ export abstract class Scene<T extends BaseSceneOptions = BaseSceneOptions> {
         if (timeoutMS < 150) {
             logger.warn('transitions under 150ms may cause lags and cooldowns.');
         }
-        setInterval(() => this.dropoutCount = 0, 60000);
+        setInterval(() => {
+            if (this.dropoutCount > 0) {
+                logger.info('resetting dropout counter');
+            }
+            this.dropoutCount = 0
+        }, 60000);
     }
 
     public async start(): Promise<void> {
@@ -58,9 +62,9 @@ export abstract class Scene<T extends BaseSceneOptions = BaseSceneOptions> {
         lights = lightsOverride || lights || [];
         const startTime = Date.now();
         await Promise.all(groups.map(group =>
-            this.api.setGroupLightState(group, state))
-                .concat(lights.map(light => this.api.setLightState(light, state)))
-        ).catch(e => {logger.warn('scene dropped a dispatch'); this.dropoutCount++;});
+            this.api.setGroupLightState(typeof group === "string" ? group : group.id, state))
+                .concat(lights.map(light => this.api.setLightState(typeof light === "string" ? light : light.uniqueid, state)))
+        ).catch(e => {logger.warn('scene dropped a dispatch. dropouts: %s/10', this.dropoutCount + 1); this.dropoutCount++;});
         const endTime = Date.now();
         const elapsed = endTime - startTime;
         let averageSrc = this.average * this.averageCount;
@@ -68,7 +72,7 @@ export abstract class Scene<T extends BaseSceneOptions = BaseSceneOptions> {
         averageSrc += elapsed;
         averageSrc /= this.averageCount;
         this.average = averageSrc;
-        logger.debug(`scene dispatched in ${elapsed}ms, average dispatch ${averageSrc}ms`);
+        logger.debug(`scene dispatched in ${elapsed}ms, average dispatch ${averageSrc.toFixed(2)}ms`);
     }
     
     private delayedNext(loop: boolean = false) {
@@ -79,4 +83,12 @@ export abstract class Scene<T extends BaseSceneOptions = BaseSceneOptions> {
     }
 
     protected abstract next(): Promise<void>;
+
+    protected get lightTargetIDs() {
+        return (this.options.lights || []).map(l => typeof l === "string" ? l : l.uniqueid);
+    }
+
+    protected get groupTargetIDs() {
+        return (this.options.groups || []).map(g => typeof g === "string" ? g : g.id);
+    }
 }

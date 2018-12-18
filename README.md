@@ -1,5 +1,5 @@
 # hue-tools
-A library and CLI for various Hue lighting environments
+A library and CLI for various Hue lighting environments, as well as a broker for other tools that want to utilize the extra APIs and features this library offers
 
 > This project is made for my own enjoyment. It comes with no guaranteed updates, fixes, support, etc.
 

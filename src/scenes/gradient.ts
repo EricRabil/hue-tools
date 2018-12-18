@@ -65,15 +65,22 @@ export default class GradientScene extends Scene<GradientOptions> {
     async init() {
         const [gradientLoop, brightnessLoop] = await Promise.all([generateRGB(this.options.colorRange, this.options.gradientStops), generateRGB({rangeR: this.options.brightnessRange, rangeG: [0, 0], rangeB: [0, 0]}, this.options.gradientStops)]);
 
+        logger.debug('gradient scene init. scene transition: %s, state transition: %s', this.timeoutMS, this.options.transition)
+
         const gradient = tinygradient(gradientLoop);
         this.gradientSteps = gradient.rgb(this.options.gradientSteps || 500).map(c => c.toRgb());
 
         const brightness = tinygradient(brightnessLoop);
         this.brightnessSteps = brightness.rgb(this.options.gradientSteps || 500).map(c => c.toRgb());
+
+        // initiate the scene NOW;
+        await this.next();
     }
 
     async next() {
-        const state = LightState.create().xy(...RGB.from(this.color).xy).transition(this.timeoutMS).turnOn();
+        const state = LightState.create().xy(...RGB.from(this.color).xy).transition(this.options.transition).on();
+
+        logger.debug('new state: %j', state);
 
         if (this.options.brightnessRange) {
             state.brightness(this.brightness.r);

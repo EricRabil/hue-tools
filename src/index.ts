@@ -1,11 +1,10 @@
+import fs from "fs-extra";
+import hue, { HueApi } from "node-hue-api";
+import path from "path";
+import readline from "readline-sync";
+import HueToolsServer from "./http/HueToolsServer";
 import "./util/patches";
 
-import hue, { HueApi } from "node-hue-api";
-import fs from "fs-extra";
-import readline from "readline-sync";
-import GradientScene, { ColorRangeSamples } from "./scenes/gradient";
-import StrobeScene from "./scenes/strobe";
-import { RGB } from "./util/Colors";
 
 export default async function initializeLibrary() {
     let api: HueApi;
@@ -42,3 +41,9 @@ export default async function initializeLibrary() {
 
     return api;
 };
+
+const server = new HueToolsServer({
+    routesDirectory: path.resolve(__dirname, "http", "routes")
+});
+
+server.listen(3030);
