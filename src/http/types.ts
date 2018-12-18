@@ -1,7 +1,7 @@
-import fs from "fs-extra";
 import views from "co-views";
-import path from "path";
+import fs from "fs-extra";
 import Router, { IMiddleware } from "koa-router";
+import path from "path";
 import { collapse } from "../util/array";
 
 const render = views(path.resolve(__dirname, "templates"), {

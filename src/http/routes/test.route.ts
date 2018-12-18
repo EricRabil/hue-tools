@@ -1,4 +1,3 @@
-import path from "path";
 import { Route } from "../types";
 
 export const test: Route = {

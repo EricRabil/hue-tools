@@ -1,14 +1,9 @@
-import views from "co-views";
-import fs from "fs-extra";
-import Koa from "koa";
-import Router, { IMiddleware } from "koa-router";
-import path from "path";
-
-import { isRoute, isRoutes, Route, Routes, RoutingHelpers } from "./types";
-import { collapse } from "../util/array";
-import { ListenOptions } from "net";
 import { Server } from "http";
+import Koa from "koa";
+import Router from "koa-router";
 import { flattenDirectory } from "../util/fs";
+import { RoutingHelpers } from "./types";
+
 
 export interface ServerSettings {
     routesDirectory: string;
@@ -51,12 +46,4 @@ export default class HueToolsServer extends Koa {
 
         this.use(this.router.routes()).use(this.router.allowedMethods());
     }
-
-
-
-
-
-
-
-
 }
